@@ -1,4 +1,5 @@
-FROM node:20
+# node:24.14.1-trixie
+FROM node@sha256:dcc3e56b82427ddc3b91ca2b18499450d670fc58251d944e5107d8ef2899f841
 
 ARG TZ
 ENV TZ="$TZ"
@@ -25,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   jq \
   nano \
   vim \
+  zip \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Ensure default node user has access to /usr/local/share
@@ -81,6 +83,36 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 # Install Claude
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
+
+# --- Starting additional steps ---
+ENV SDKMAN_DIR /home/node/.sdkman
+ARG SDKMAN_JAVA_VERSION=25.0.2-tem
+ARG SDKMAN_GRADLE_VERSION=9.4.1
+ARG PNPM_VERSION=10.33
+
+SHELL ["/bin/bash", "-c"]
+
+# Install JDK & Gradle via sdkman
+# Use saved installation script to fix sdkman version
+# ```
+# curl -s "https://get.sdkman.io" -o sdkman_install_stable.sh
+# ```
+# source: https://github.com/sdkman/sdkman-hooks/blob/master/app/views/install_stable.scala.txt
+COPY --chown=node sdkman_install_stable.sh /tmp/sdkman_install_stable.sh
+RUN bash /tmp/sdkman_install_stable.sh \
+    && rm /tmp/sdkman_install_stable.sh
+RUN source "$SDKMAN_DIR/bin/sdkman-init.sh" \
+  && sdk install java ${SDKMAN_JAVA_VERSION} \
+  && sdk install gradle ${SDKMAN_GRADLE_VERSION}
+
+# Install pnpm
+USER root
+RUN corepack enable pnpm
+USER node
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack use pnpm@${PNPM_VERSION}
+
+# --- Finished additional steps ---
 
 # Copy and set up firewall script
 COPY init-firewall.sh /usr/local/bin/
