@@ -70,6 +70,10 @@ for domain in \
     "sentry.io" \
     "statsig.anthropic.com" \
     "statsig.com" \
+    "maven.apache.org" \
+    "repo.maven.apache.org" \
+    "plugins.gradle.org" \
+    "services.gradle.org \
     "marketplace.visualstudio.com" \
     "vscode.blob.core.windows.net" \
     "update.code.visualstudio.com"; do
